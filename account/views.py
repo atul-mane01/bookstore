@@ -1,14 +1,13 @@
-
 from django.shortcuts import render
 from matplotlib.style import context
 from yaml import serialize
 from account.models import User
 from django.contrib.auth import authenticate
-from account.serilizers import UserLoginSerializers, UserPasswordResetViewSerializers,UserRegistrationSerializers,UserProfileSerializers,UserChangePasswordSerializers,SendPasswordEmailSerializers
+from account.serilizers import UserLoginSerializers,UserDeleteBookViewSerializers,UserAddBookViewSerializers, UserPasswordResetViewSerializers,UserRegistrationSerializers,UserProfileSerializers,UserChangePasswordSerializers,SendPasswordEmailSerializers
 from .renders import UserRender
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
-from .models import Category, Writer, Book, Review, Slider
+from .models import  Book, Student
 # Create your views here.
 from rest_framework.response import Response
 from rest_framework import status
@@ -93,78 +92,45 @@ class UserPasswordResetView(APIView):
 
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
+class AddBook(APIView):
+    renderer_classes=[UserRender]
+    def post(self,request,format=None):
+        serializer=UserAddBookViewSerializers(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response({'msg':'book added Sucess'},status=status.HTTP_200_OK)
 
-def signout(request):
-    logout(request)
-    return redirect('store:index')	
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
+        
+       
+    
+class EditBook(APIView):
+    renderer_classes=[UserRender]
+    def put(self,pk,request,format=None):
+        snippet = self.get_object(pk)
+        serializer = UserAddBookViewSerializers(snippet, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def registration(request):
-	form = RegistrationForm(request.POST or None)
-	if form.is_valid():
-		form.save()
-		return redirect('store:signin')
+    
+class DeleteBook(APIView):
+    renderer_classes=[UserRender]
+    def delete(self,request,format=None):
+        serializer=UserDeleteBookViewSerializers(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            
+            snippet = self.get_object(pk)
+            snippet.delete()
+            
+            return Response({'msg':'book entry deleted'},status=status.HTTP_200_OK)
 
-	return render(request, 'store/signup.html', {"form": form})
-
-def payment(request):
-    return render(request, 'store/payment.html')
-
-
-def get_book(request, id):
-    form = ReviewForm(request.POST or None)
-    book = get_object_or_404(Book, id=id)
-    rbooks = Book.objects.filter(category_id=book.category.id)
-    r_review = Review.objects.filter(book_id=id).order_by('-created')
-
-    paginator = Paginator(r_review, 4)
-    page = request.GET.get('page')
-    rreview = paginator.get_page(page)
-
-    if request.method == 'POST':
-        if request.user.is_authenticated:
-            if form.is_valid():
-                temp = form.save(commit=False)
-                temp.customer = User.objects.get(id=request.user.id)
-                temp.book = book          
-                temp = Book.objects.get(id=id)
-                temp.totalreview += 1
-                temp.totalrating += int(request.POST.get('review_star'))
-                form.save()  
-                temp.save()
-
-                messages.success(request, "Review Added Successfully")
-                form = ReviewForm()
-        else:
-            messages.error(request, "You need login first.")
-    context = {
-        "book":book,
-        "rbooks": rbooks,
-        "form": form,
-        "rreview": rreview
-    }
-    return render(request, "store/book.html", context)
-
-
-def get_books(request):
-    books_ = Book.objects.all().order_by('-created')
-    paginator = Paginator(books_, 10)
-    page = request.GET.get('page')
-    books = paginator.get_page(page)
-    return render(request, "store/category.html", {"book":books})
-
-def get_book_category(request, id):
-    book_ = Book.objects.filter(category_id=id)
-    paginator = Paginator(book_, 10)
-    page = request.GET.get('page')
-    book = paginator.get_page(page)
-    return render(request, "store/category.html", {"book":book})
-
-def get_writer(request, id):
-    wrt = get_object_or_404(Writer, id=id)
-    book = Book.objects.filter(writer_id=wrt.id)
-    context = {
-        "wrt": wrt,
-        "book": book
-    }
-    return render(request, "store/writer.html", context)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+class GetAllBooks(APIView):
+    renderer_classes=[UserRender]
+    def get(self,request,format=None):
+        serializer=UserAddBookViewSerializers(request.data)
+        # return Response(get_entries.data,status=status.HTTP_200_OK)
+        return Response(serializer.data,status=status.HTTP_200_OK)

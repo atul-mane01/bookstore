@@ -6,7 +6,7 @@ from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 from rest_framework import serializers
-from .models import User
+from .models import Student, User
 
 class UserRegistrationSerializers(serializers.ModelSerializer):
     password2=serializers.CharField(style={'input_type':'password'},write_only=True)
@@ -121,4 +121,18 @@ class UserPasswordResetViewSerializers(serializers.ModelSerializer):
         except DjangoUnicodeDecodeError as identifier:
             PasswordResetTokenGenerator().check_token(user,token)
             raise ValidationError('Token is not valid or expiresd')
+ 
+ 
+class UserAddBookViewSerializers(serializers.ModelSerializer):
+    class Meta:
+        fields='__all__'
+        model=Student
         
+class UserDeleteBookViewSerializers(serializers.ModelSerializer):
+    student_id=serializers.IntegerField(write_only=True)
+
+    class Meta:
+        fields=['student_id']
+        model=Student
+        
+    
